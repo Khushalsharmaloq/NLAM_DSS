@@ -5,9 +5,8 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 import './ParcelGIS.css'
-
-const API_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:8001'
+import { apiFetch } from './services/api'
+import { useAuth } from './auth/AuthContext'
 
 type Parcel = {
   id: number
@@ -50,6 +49,8 @@ function formatArea(value: number): string {
 export default function ParcelGIS({
   projectId,
 }: ParcelGISProps) {
+  const { user } = useAuth()
+
   const mapElementRef = useRef<HTMLDivElement | null>(null)
 
   const mapRef = useRef<L.Map | null>(null)
@@ -125,8 +126,8 @@ export default function ParcelGIS({
     setError('')
 
     try {
-      const response = await fetch(
-        `${API_URL}/api/v1/projects/${projectId}/parcels`
+      const response = await apiFetch(
+        `/api/v1/projects/${projectId}/parcels`
       )
 
       if (!response.ok) {
@@ -341,8 +342,8 @@ export default function ParcelGIS({
     }
 
     try {
-      const response = await fetch(
-        `${API_URL}/api/v1/projects/${projectId}/parcels`,
+      const response = await apiFetch(
+        `/api/v1/projects/${projectId}/parcels`,
         {
           method: 'POST',
 
@@ -467,7 +468,7 @@ export default function ParcelGIS({
               </span>
             </div>
 
-            {!drawing && (
+            {user?.role === 'PROJECT_OFFICER' && !drawing && (
               <button
                 type="button"
                 className="button button-primary"

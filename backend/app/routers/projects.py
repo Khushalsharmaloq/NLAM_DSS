@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.dependencies import get_current_user, require_roles
 from app.database import get_db
 from app.models.project import Project
 from app.schemas.project import ProjectCreate, ProjectResponse
@@ -10,6 +11,7 @@ from app.schemas.project import ProjectCreate, ProjectResponse
 router = APIRouter(
     prefix="/api/v1/projects",
     tags=["Projects"],
+    dependencies=[Depends(get_current_user)],
 )
 
 
@@ -21,6 +23,7 @@ router = APIRouter(
 def create_project(
     payload: ProjectCreate,
     db: Session = Depends(get_db),
+    actor=Depends(require_roles("PROJECT_OFFICER")),
 ):
 
     project = Project(

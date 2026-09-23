@@ -11,6 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.dependencies import get_current_user, require_roles
 from app.database import get_db
 from app.models.project import Project
 
@@ -23,6 +24,7 @@ from app.schemas.parcel import (
 router = APIRouter(
     prefix="/api/v1/projects",
     tags=["Land Parcels"],
+    dependencies=[Depends(get_current_user)],
 )
 
 
@@ -76,6 +78,7 @@ def create_parcel(
     project_id: int,
     payload: ParcelCreate,
     db: Session = Depends(get_db),
+    actor=Depends(require_roles("PROJECT_OFFICER")),
 ):
 
     find_project(db, project_id)

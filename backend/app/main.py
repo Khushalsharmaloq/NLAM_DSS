@@ -6,9 +6,11 @@ from sqlalchemy import text
 
 from app.database import Base, engine
 from app.models.project import Project
+from app.models.user import User
 from app.models.workflow import ProjectWorkflowEvent
 from app.models.parcel import Parcel
 from app.routers.projects import router as projects_router
+from app.routers.auth import router as auth_router
 from app.routers.workflow import router as workflow_router
 
 
@@ -46,13 +48,14 @@ app.add_middleware(
     ],
     allow_credentials=False,
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 
 from app.routers.parcels import router as parcels_router
 
 app.include_router(projects_router)
+app.include_router(auth_router)
 app.include_router(workflow_router)
 app.include_router(parcels_router)
 

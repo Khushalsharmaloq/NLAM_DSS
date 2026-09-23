@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import './ProjectWorkflow.css'
-
-const API_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:8001'
+import { apiFetch } from '../../services/api'
+import { useAuth } from '../../auth/AuthContext'
 
 type WorkflowAction =
   | 'SUBMIT'
@@ -44,6 +43,13 @@ const actionLabels: Record<WorkflowAction, string> = {
   REJECT: 'Reject proposal',
 }
 
+const actionRoles: Record<WorkflowAction, string> = {
+  SUBMIT: 'PROJECT_OFFICER',
+  START_REVIEW: 'DISTRICT_AUTHORITY',
+  RETURN: 'DISTRICT_AUTHORITY',
+  APPROVE: 'STATE_AUTHORITY',
+  REJECT: 'STATE_AUTHORITY',
+}
 function formatStatus(status: string): string {
   return status.replaceAll('_', ' ')
 }
@@ -59,6 +65,8 @@ export default function ProjectWorkflow({
   projectId,
   onStatusChange,
 }: WorkflowProps) {
+  const { user } = useAuth()
+
   const [workflow, setWorkflow] =
     useState<WorkflowState | null>(null)
 
@@ -77,12 +85,12 @@ export default function ProjectWorkflow({
   const [notice, setNotice] = useState('')
 
   const loadWorkflow = useCallback(async () => {
-    const base = `${API_URL}/api/v1/projects/${projectId}`
+    const base = `/api/v1/projects/${projectId}`
 
     const [workflowResponse, historyResponse] =
       await Promise.all([
-        fetch(`${base}/workflow`),
-        fetch(`${base}/workflow/history`),
+        apiFetch(`${base}/workflow`),
+        apiFetch(`${base}/workflow/history`),
       ])
 
     if (!workflowResponse.ok || !historyResponse.ok) {
@@ -152,7 +160,7 @@ export default function ProjectWorkflow({
   async function executeAction() {
     if (!selectedAction || !workflow || saving) return
 
-    if (!workflow.allowed_actions.includes(selectedAction)) {
+    if (!workflow.allowed_actions.includes(selectedAction) || actionRoles[selectedAction] !== user?.role) {
       setError('This action is no longer available.')
       return
     }
@@ -184,8 +192,8 @@ export default function ProjectWorkflow({
     setNotice('')
 
     try {
-      const response = await fetch(
-        `${API_URL}/api/v1/projects/${projectId}/workflow/transition`,
+      const response = await apiFetch(
+        `/api/v1/projects/${projectId}/workflow/transition`,
         {
           method: 'POST',
           headers: {
@@ -251,6 +259,10 @@ export default function ProjectWorkflow({
     selectedAction === 'RETURN' ||
     selectedAction === 'REJECT'
 
+
+  const availableActions = workflow?.allowed_actions.filter(
+    (action) => actionRoles[action] === user?.role
+  ) ?? []
   return (
     <section className="panel workflow-section">
       <div className="panel-heading">
@@ -309,7 +321,7 @@ export default function ProjectWorkflow({
               </span>
 
               <strong>
-                {workflow.allowed_actions.length}
+                {availableActions.length}
               </strong>
             </div>
 
@@ -332,7 +344,7 @@ export default function ProjectWorkflow({
                 or rejecting a proposal.
               </p>
 
-              {workflow.allowed_actions.length === 0 ? (
+              {availableActions.length === 0 ? (
                 <div className="workflow-empty">
                   No further actions are available
                   from the current project status.
@@ -359,7 +371,7 @@ export default function ProjectWorkflow({
                         Choose an action
                       </option>
 
-                      {workflow.allowed_actions.map((action) => (
+                      {availableActions.map((action) => (
                         <option
                           key={action}
                           value={action}

@@ -27,6 +27,7 @@ services:
     restart: unless-stopped
 
     environment:
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be configured}
       DATABASE_URL: postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
 
     ports:

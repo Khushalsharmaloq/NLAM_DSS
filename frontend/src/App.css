@@ -650,3 +650,42 @@ input::placeholder {
     width: auto;
   }
 }
+/* Authentication layout */
+
+.account-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.account-info strong {
+  color: #30473a;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.account-info span {
+  color: #67776b;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+}
+
+.logout-button {
+  flex-shrink: 0;
+}
+
+.auth-loading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #edf0e9;
+  color: #405b48;
+  font-size: 14px;
+}
+
+@media (max-width: 800px) {
+  .topbar-right {
+    flex-wrap: wrap;
+  }
+}

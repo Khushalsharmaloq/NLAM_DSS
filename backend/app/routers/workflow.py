@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from sqlalchemy.orm import Session
 
+from app.core.dependencies import get_current_user
 from app.database import get_db
 
 from app.models.project import Project
@@ -24,6 +25,7 @@ from app.schemas.workflow import (
 router = APIRouter(
     prefix="/api/v1/projects",
     tags=["Project Workflow"],
+    dependencies=[Depends(get_current_user)],
 )
 
 
@@ -31,6 +33,15 @@ router = APIRouter(
 #
 # These actions simulate administrative processing.
 # They must not be treated as official legal approvals.
+
+
+ACTION_ROLES = {
+    "SUBMIT": {"PROJECT_OFFICER"},
+    "START_REVIEW": {"DISTRICT_AUTHORITY"},
+    "RETURN": {"DISTRICT_AUTHORITY"},
+    "APPROVE": {"STATE_AUTHORITY"},
+    "REJECT": {"STATE_AUTHORITY"},
+}
 
 
 TRANSITIONS = {
@@ -114,7 +125,19 @@ def transition_project(
     project_id: int,
     payload: WorkflowTransitionRequest,
     db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
+
+    permitted_roles = ACTION_ROLES[payload.action]
+
+    if current_user.role not in permitted_roles:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Your role does not permit "
+                "this workflow action."
+            ),
+        )
 
     # Lock the project record while evaluating and
     # applying the transition to prevent concurrent
@@ -176,7 +199,7 @@ def transition_project(
         previous_status=current_status,
         new_status=next_status,
         comment=comment,
-        actor_reference="DEMO_OPERATOR",
+        actor_reference=current_user.username,
     )
 
     db.add(event)
