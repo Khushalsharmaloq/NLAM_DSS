@@ -78,5 +78,6 @@ class RRHouseholdResponse(BaseModel):
     assistance_type: str
     indicative_assistance_inr: Decimal
     remarks: str | None
+    progress_status: str
     created_by_username: str
     created_at: datetime

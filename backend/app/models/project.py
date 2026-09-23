@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import DateTime, Integer, Numeric, String
+from datetime import date
+
+from sqlalchemy import Date, DateTime, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -42,6 +44,12 @@ class Project(Base):
         nullable=False,
         default="DRAFT",
     )
+
+    owner_username: Mapped[str | None] = mapped_column(String(80), index=True)
+    agency: Mapped[str | None] = mapped_column(String(180))
+    sector: Mapped[str | None] = mapped_column(String(80))
+    description: Mapped[str | None] = mapped_column(Text)
+    target_date: Mapped[date | None] = mapped_column(Date)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

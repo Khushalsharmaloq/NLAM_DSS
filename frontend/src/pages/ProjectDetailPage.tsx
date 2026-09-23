@@ -14,15 +14,20 @@ import {
 } from '../services/api'
 
 import type { Project } from '../types/project'
+import { useAuth } from '../auth/AuthContext'
 import ProjectWorkflow from '../components/workflow/ProjectWorkflow'
 import ProjectDocuments from '../components/documents/ProjectDocuments'
 import ProjectCompensation from '../components/compensation/ProjectCompensation'
 import ProjectRR from '../components/rr/ProjectRR'
 import ProjectPossession from '../components/possession/ProjectPossession'
+import AcquisitionPanel from '../components/acquisition/AcquisitionPanel'
+import TimelinePanel from '../components/milestones/TimelinePanel'
+import AuditPanel from '../components/audit/AuditPanel'
 
 import './ProjectDetailPage.css'
 
 export default function ProjectDetailPage() {
+  const { user } = useAuth()
   const { projectId } = useParams()
 
   const location = useLocation()
@@ -112,9 +117,11 @@ export default function ProjectDetailPage() {
               </p>
             </div>
 
-            <span className="status-badge">
-              {project.status}
-            </span>
+            <div className="project-heading-actions">
+              {user?.role === 'PROJECT_OFFICER' && ['DRAFT', 'RETURNED'].includes(project.status) &&
+                <Link className="button button-secondary" to={`/projects/${project.id}/edit`}>Edit proposal</Link>}
+              <span className="status-badge">{project.status}</span>
+            </div>
           </div>
 
           <nav
@@ -137,6 +144,8 @@ export default function ProjectDetailPage() {
               Documents
             </a>
 
+            <a href="#project-acquisition">Notifications &amp; awards</a>
+
             <a href="#project-compensation">
               Compensation
             </a>
@@ -148,6 +157,9 @@ export default function ProjectDetailPage() {
             <a href="#project-possession">
               Parcel progress
             </a>
+
+            <a href="#project-timeline">Timeline</a>
+            <a href="#project-audit">Audit history</a>
 
             <Link to={`/projects/${project.id}/gis`}>
               GIS map
@@ -207,6 +219,11 @@ export default function ProjectDetailPage() {
                 <dt>Registration date</dt>
                 <dd>{formatDate(project.created_at)}</dd>
               </div>
+              <div><dt>Implementing agency</dt><dd>{project.agency || 'Not provided'}</dd></div>
+              <div><dt>Sector</dt><dd>{project.sector || 'Not provided'}</dd></div>
+              <div><dt>Target date</dt><dd>{project.target_date ? formatDate(project.target_date) : 'Not set'}</dd></div>
+              <div><dt>Project officer</dt><dd>{project.owner_username || 'Legacy record'}</dd></div>
+              {project.description && <div className="field-full"><dt>Description</dt><dd>{project.description}</dd></div>}
             </dl>
           </section>
 
@@ -237,6 +254,10 @@ export default function ProjectDetailPage() {
             <ProjectCompensation projectId={project.id} />
           </div>
 
+          <div id="project-acquisition" className="project-section-anchor">
+            <AcquisitionPanel projectId={project.id} approved={project.status === 'APPROVED'} />
+          </div>
+
           <div
             id="project-rr"
             className="project-section-anchor"
@@ -249,6 +270,14 @@ export default function ProjectDetailPage() {
             className="project-section-anchor"
           >
             <ProjectPossession projectId={project.id} />
+          </div>
+
+          <div id="project-timeline" className="project-section-anchor">
+            <TimelinePanel projectId={project.id} />
+          </div>
+
+          <div id="project-audit" className="project-section-anchor">
+            <AuditPanel projectId={project.id} />
           </div>
 
           <div className="information-note">

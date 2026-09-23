@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 
 import { useAuth } from '../../auth/AuthContext'
-import { apiFetch } from '../../services/api'
+import { apiFetch, sendJson } from '../../services/api'
 
 import './ProjectRR.css'
 
@@ -24,6 +24,7 @@ type RRHousehold = {
   assistance_type: string
   indicative_assistance_inr: string
   remarks: string | null
+  progress_status: string
   created_by_username: string
   created_at: string
 }
@@ -104,6 +105,7 @@ export default function ProjectRR({
 }) {
   const { user } = useAuth()
   const canCreate = user?.role === 'PROJECT_OFFICER'
+  const canAdvance = ['DISTRICT_AUTHORITY', 'STATE_AUTHORITY', 'SYSTEM_ADMIN'].includes(user?.role ?? '')
 
   const [records, setRecords] = useState<RRHousehold[]>([])
   const [parcels, setParcels] = useState<Parcel[]>([])
@@ -285,6 +287,23 @@ export default function ProjectRR({
     } finally {
       setSaving(false)
     }
+  }
+
+  async function advance(record: RRHousehold) {
+    const next: Record<string, string> = {
+      IDENTIFIED: 'VERIFIED', VERIFIED: 'ASSISTANCE_APPROVED',
+      ASSISTANCE_APPROVED: 'ASSISTANCE_DELIVERED',
+    }
+    if (!next[record.progress_status]) return
+    setSaving(true); setError(''); setNotice('')
+    try {
+      await sendJson(`/api/v1/projects/${projectId}/rr-households/${record.id}/progress`,
+        { status: next[record.progress_status] }, 'PATCH')
+      setNotice(`R&R stage advanced for ${record.household_reference}.`)
+      await refreshRecords()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to advance R&R progress.')
+    } finally { setSaving(false) }
   }
 
   const parcelLabels = new Map(
@@ -590,6 +609,7 @@ export default function ProjectRR({
                   <th scope="col">Impact</th>
                   <th scope="col">Relocation</th>
                   <th scope="col">Assistance plan</th>
+                  <th scope="col">Progress</th>
                   <th scope="col">Recorded by</th>
                 </tr>
               </thead>
@@ -657,6 +677,10 @@ export default function ProjectRR({
                       </span>
                     </td>
 
+                    <td><span className="status-badge">{record.progress_status.replaceAll('_', ' ')}</span>
+                      {canAdvance && record.progress_status !== 'ASSISTANCE_DELIVERED' &&
+                        <button type="button" className="table-action" disabled={saving}
+                          onClick={() => void advance(record)}>Advance stage</button>}</td>
                     <td>{record.created_by_username}</td>
                   </tr>
                 ))}

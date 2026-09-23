@@ -206,6 +206,41 @@ export default function ParcelGIS({
     void loadParcels()
   }, [loadParcels])
 
+  useEffect(() => {
+    function importCandidate(event: Event) {
+      if (user?.role !== 'PROJECT_OFFICER') return
+      const detail = (event as CustomEvent).detail as {
+        record?: Record<string, unknown>; geometry?: { type?: string; coordinates?: unknown }
+      }
+      const rings = detail?.geometry?.coordinates
+      if (detail?.geometry?.type !== 'Polygon' || !Array.isArray(rings) ||
+          rings.length !== 1 || !Array.isArray(rings[0])) {
+        setError('Only simple GeoJSON polygons can be previewed. Check the cadastral map manually.')
+        return
+      }
+      const positions = rings[0] as unknown[]
+      if (positions.length < 4 || positions.length > 1001 || positions.some((p) =>
+        !Array.isArray(p) || p.length !== 2 || !p.every((v) => typeof v === 'number' && Number.isFinite(v)))) {
+        setError('The external service returned invalid boundary coordinates.')
+        return
+      }
+      const points = positions.slice(0, -1).map((p) => {
+        const [lng, lat] = p as number[]
+        return L.latLng(lat, lng)
+      })
+      if (points.length < 3) return
+      verticesRef.current = points; drawingRef.current = true
+      setVertexCount(points.length); setDrawing(true); updatePreview(points)
+      setForm({ survey_number: String(detail.record?.survey_number ?? ''),
+        village: String(detail.record?.village ?? ''),
+        land_type: String(detail.record?.land_type ?? 'Agricultural') })
+      setError(''); setNotice('External boundary loaded for visual review. Save only after field verification.')
+      mapRef.current?.fitBounds(L.latLngBounds(points), { padding: [30, 30], maxZoom: 17 })
+    }
+    window.addEventListener('nlam:land-boundary', importCandidate)
+    return () => window.removeEventListener('nlam:land-boundary', importCandidate)
+  }, [updatePreview, user?.role])
+
   // Display database polygons on the map.
 
   useEffect(() => {
@@ -478,6 +513,14 @@ export default function ParcelGIS({
               </button>
             )}
 
+            <button type="button" className="button button-secondary" onClick={() => {
+              if (!navigator.geolocation) { setError('Location is not available in this browser.'); return }
+              navigator.geolocation.getCurrentPosition(
+                (position) => mapRef.current?.setView([position.coords.latitude, position.coords.longitude], 16),
+                () => setError('Location access was unavailable. Use the map controls instead.'),
+                { enableHighAccuracy: true, timeout: 10000 })
+            }}>Use my location</button>
+
             {drawing && (
               <button
                 type="button"
@@ -491,6 +534,7 @@ export default function ParcelGIS({
           </div>
 
           <div
+            id="parcel-map"
             ref={mapElementRef}
             className="gis-map"
             aria-label="Interactive project land parcel map"

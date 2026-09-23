@@ -18,6 +18,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from sqlalchemy.orm import Session
 
@@ -26,6 +27,7 @@ from app.core.dependencies import (
     require_roles,
 )
 
+from app.core.project_access_dependency import get_accessible_project
 from app.database import get_db
 
 from app.models.document import ProjectDocument
@@ -68,6 +70,8 @@ class DocumentResponse(BaseModel):
     content_type: str
     size_bytes: int
     notes: str | None
+    version: int
+    supersedes_id: int | None
     uploaded_by_username: str
     uploaded_at: datetime
 
@@ -141,6 +145,7 @@ def verified_content_type(
 
 @router.get(
     "/{project_id}/documents",
+    dependencies=[Depends(get_accessible_project)],
     response_model=list[DocumentResponse],
 )
 def list_documents(
@@ -158,6 +163,7 @@ def list_documents(
 
 @router.post(
     "/{project_id}/documents",
+    dependencies=[Depends(get_accessible_project)],
     response_model=DocumentResponse,
     status_code=201,
 )
@@ -165,11 +171,23 @@ async def upload_document(
     project_id: int,
     document_type: DocumentType = Form(...),
     notes: str = Form(""),
+    replaces_document_id: int | None = Form(None),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     actor: User = Depends(require_roles("PROJECT_OFFICER")),
 ):
     require_project(db, project_id)
+
+    previous = None
+    if replaces_document_id is not None:
+        previous = db.scalar(select(ProjectDocument).where(
+            ProjectDocument.id == replaces_document_id,
+            ProjectDocument.project_id == project_id))
+        if previous is None or previous.document_type != document_type:
+            raise HTTPException(422, "Select a document of the same type in this project.")
+        if db.scalar(select(ProjectDocument.id).where(
+            ProjectDocument.supersedes_id == previous.id)):
+            raise HTTPException(409, "That document has already been superseded; select the newest version.")
 
     if len(notes) > 500:
         raise HTTPException(
@@ -235,6 +253,8 @@ async def upload_document(
             content_type=content_type,
             size_bytes=total_bytes,
             notes=notes.strip() or None,
+            version=previous.version + 1 if previous else 1,
+            supersedes_id=previous.id if previous else None,
             uploaded_by_username=actor.username,
         )
 
@@ -244,10 +264,12 @@ async def upload_document(
 
         return document
 
-    except Exception:
+    except Exception as exc:
         db.rollback()
         temporary_path.unlink(missing_ok=True)
         final_path.unlink(missing_ok=True)
+        if isinstance(exc, IntegrityError):
+            raise HTTPException(409, "This document has already been superseded.") from exc
         raise
 
     finally:
@@ -256,6 +278,7 @@ async def upload_document(
 
 @router.get(
     "/{project_id}/documents/{document_id}/download",
+    dependencies=[Depends(get_accessible_project)],
 )
 def download_document(
     project_id: int,

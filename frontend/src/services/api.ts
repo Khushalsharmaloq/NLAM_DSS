@@ -9,7 +9,7 @@ import type {
 } from '../types/project'
 
 export const API_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:8001'
+  import.meta.env.VITE_API_URL || 'http://127.0.0.1:8001'
 
 export const AUTH_TOKEN_KEY = 'nlam_dss_access_token'
 
@@ -44,7 +44,7 @@ export async function apiFetch(
 }
 
 
-async function request<T>(
+export async function request<T>(
   path: string,
   options?: RequestInit
 ): Promise<T> {
@@ -76,6 +76,11 @@ async function request<T>(
   }
 
   return response.json() as Promise<T>
+}
+
+export function sendJson<T>(path: string, body: unknown, method = 'POST'): Promise<T> {
+  return request<T>(path, { method, headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body) })
 }
 
 

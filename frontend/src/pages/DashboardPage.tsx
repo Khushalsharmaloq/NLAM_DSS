@@ -22,6 +22,11 @@ type ParcelStageCounts = Record<string, number>
 type MisOverview = {
   project_count: number
   proposed_area_ha: string
+  notified_area_ha: string
+  acquired_area_ha: string
+  compensation_assessed_inr: string
+  compensation_paid_inr: string
+  milestone_overdue_count: number
   states_count: number
   project_status_counts: ProjectStatusCounts
 
@@ -100,8 +105,8 @@ export default function DashboardPage() {
   useEffect(() => {
     let active = true
 
-    async function loadDashboard() {
-      setLoading(true)
+    async function loadDashboard(silent = false) {
+      if (!silent) setLoading(true)
       setError('')
 
       try {
@@ -130,14 +135,16 @@ export default function DashboardPage() {
             : 'Unable to load dashboard information.'
         )
       } finally {
-        if (active) setLoading(false)
+        if (active && !silent) setLoading(false)
       }
     }
 
     void loadDashboard()
+    const timer = window.setInterval(() => void loadDashboard(true), 30_000)
 
     return () => {
       active = false
+      window.clearInterval(timer)
     }
   }, [])
 
@@ -170,9 +177,7 @@ export default function DashboardPage() {
           <h1>Land acquisition overview</h1>
 
           <p>
-            Live summary of the current demonstration dataset:
-            projects, parcels, compensation planning, R&amp;R
-            planning, and parcel progress.
+            Monitor proposals, land parcels, compensation, R&amp;R and possession from one workspace.
           </p>
         </div>
 
@@ -256,6 +261,21 @@ export default function DashboardPage() {
             Based on registered projects
           </div>
         </div>
+      </section>
+
+      <section className="priority-strip" aria-label="Acquisition outcomes">
+        <div><span>AREA NOTIFIED</span><strong>{showFigures ? `${formatArea(Number(overview.notified_area_ha))} ha` : '—'}</strong>
+          <small>Linked to recorded notifications</small></div>
+        <div><span>POSSESSION RECORDED</span><strong>{showFigures ? `${formatArea(Number(overview.acquired_area_ha))} ha` : '—'}</strong>
+          <small>Based on parcel milestone entries</small></div>
+        <div><span>AWARDS ASSESSED</span><strong>{showFigures ? money(overview.compensation_assessed_inr) : '—'}</strong>
+          <small>Recorded award totals</small></div>
+        <div><span>DISBURSEMENTS RECORDED</span><strong>{showFigures ? money(overview.compensation_paid_inr) : '—'}</strong>
+          <small>Payment ledger entries</small></div>
+        <div><span>FAMILIES AFFECTED / DISPLACED</span><strong>{showFigures ? `${overview.rr_household_count} / ${overview.rr_relocation_anticipated_households}` : '—'}</strong>
+          <small>Synthetic household planning records</small></div>
+        <div><span>OVERDUE MILESTONES</span><strong>{showFigures ? overview.milestone_overdue_count : '—'}</strong>
+          <small>Pending timeline action</small></div>
       </section>
 
       <div className="dashboard-mis-grid">

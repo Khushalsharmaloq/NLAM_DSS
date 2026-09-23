@@ -8,6 +8,7 @@ import {
   useLocation,
 } from 'react-router-dom'
 
+import { lazy, Suspense } from 'react'
 import type { ReactNode } from 'react'
 
 import {
@@ -17,14 +18,20 @@ import {
 
 import AppLayout from './components/layout/AppLayout'
 
-import DashboardPage from './pages/DashboardPage'
-import ProjectListPage from './pages/ProjectListPage'
-import ProjectCreatePage from './pages/ProjectCreatePage'
-import ProjectDetailPage from './pages/ProjectDetailPage'
-import ProjectGISPage from './pages/ProjectGISPage'
 import LoginPage from './pages/LoginPage'
 
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const ProjectListPage = lazy(() => import('./pages/ProjectListPage'))
+const ProjectCreatePage = lazy(() => import('./pages/ProjectCreatePage'))
+const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage'))
+const ProjectGISPage = lazy(() => import('./pages/ProjectGISPage'))
+const ReportsPage = lazy(() => import('./pages/ReportsPage'))
+const AlertsPage = lazy(() => import('./pages/AlertsPage'))
+const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'))
+const AccountPage = lazy(() => import('./pages/AccountPage'))
+
 import './App.css'
+import './pages/Operations.css'
 
 
 function ProtectedRoute() {
@@ -133,6 +140,8 @@ export default function App() {
 
       <AuthProvider>
 
+        <Suspense fallback={<div className="auth-loading" role="status">Loading workspace…</div>}>
+
         <Routes>
 
           <Route
@@ -164,6 +173,12 @@ export default function App() {
                 element={<ProjectListPage />}
               />
 
+              <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/alerts" element={<AlertsPage />} />
+              <Route path="/account" element={<AccountPage />} />
+              <Route path="/administration" element={
+                <RoleRoute role="SYSTEM_ADMIN"><AdminUsersPage /></RoleRoute>} />
+
               <Route
                 path="/projects/new"
                 element={
@@ -172,6 +187,9 @@ export default function App() {
                   </RoleRoute>
                 }
               />
+
+              <Route path="/projects/:projectId/edit" element={
+                <RoleRoute role="PROJECT_OFFICER"><ProjectCreatePage /></RoleRoute>} />
 
               <Route
                 path="/projects/:projectId"
@@ -193,6 +211,8 @@ export default function App() {
           </Route>
 
         </Routes>
+
+        </Suspense>
 
       </AuthProvider>
 

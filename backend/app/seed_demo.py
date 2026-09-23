@@ -15,24 +15,32 @@ DEMO_ACCOUNTS = [
         "Demonstration System Administrator",
         "SYSTEM_ADMIN",
         "DEMO_ADMIN_PASSWORD",
+        None, None,
     ),
     (
         "project.officer",
         "Demonstration Project Officer",
         "PROJECT_OFFICER",
         "DEMO_USER_PASSWORD",
+        "Uttar Pradesh", "Lucknow",
     ),
     (
         "district.authority",
         "Demonstration District Authority",
         "DISTRICT_AUTHORITY",
         "DEMO_USER_PASSWORD",
+        "Uttar Pradesh", "Lucknow",
     ),
     (
         "state.authority",
         "Demonstration State Authority",
         "STATE_AUTHORITY",
         "DEMO_USER_PASSWORD",
+        "Uttar Pradesh", None,
+    ),
+    (
+        "central.ministry", "Demonstration Central Ministry", "CENTRAL_MINISTRY",
+        "DEMO_USER_PASSWORD", None, None,
     ),
 ]
 
@@ -47,6 +55,8 @@ def seed_demo_accounts():
             full_name,
             role,
             password_variable,
+            state,
+            district,
         ) in DEMO_ACCOUNTS:
 
             password = os.environ[password_variable]
@@ -74,6 +84,8 @@ def seed_demo_accounts():
                 username=username,
                 full_name=full_name,
                 role=role,
+                state=state,
+                district=district,
                 hashed_password=hash_password(password),
                 is_active=True,
             )

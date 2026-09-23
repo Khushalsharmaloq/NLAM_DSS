@@ -1,4 +1,4 @@
-name: nlam-dss-fresh
+name: nlam-dss-26016
 
 services:
 
@@ -28,10 +28,15 @@ services:
 
     environment:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be configured}
-      DATABASE_URL: postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: db
+      LAND_RECORDS_API_URL: ${LAND_RECORDS_API_URL:-}
+      LAND_RECORDS_API_TOKEN: ${LAND_RECORDS_API_TOKEN:-}
 
     ports:
-      - "127.0.0.1:8001:8000"
+      - "127.0.0.1:8002:8000"
 
     volumes:
       - ./backend/app:/app/app

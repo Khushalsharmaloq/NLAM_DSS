@@ -21,6 +21,9 @@ class PolygonGeometry(BaseModel):
 
         for ring in self.coordinates:
 
+            if len(ring) > 1000:
+                raise ValueError("A polygon ring may contain at most 1000 points.")
+
             if len(ring) < 4:
                 raise ValueError(
                     "Polygon ring must contain at least four positions."

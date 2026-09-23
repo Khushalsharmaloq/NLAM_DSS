@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user
+from app.core.project_access_dependency import get_accessible_project
 from app.database import get_db
 
 from app.models.project import Project
@@ -87,6 +88,7 @@ def get_existing_project(
 
 @router.get(
     "/{project_id}/workflow",
+    dependencies=[Depends(get_accessible_project)],
 )
 def get_project_workflow(
     project_id: int,
@@ -119,6 +121,7 @@ def get_project_workflow(
 
 @router.post(
     "/{project_id}/workflow/transition",
+    dependencies=[Depends(get_accessible_project)],
     response_model=WorkflowTransitionResponse,
 )
 def transition_project(
@@ -223,6 +226,7 @@ def transition_project(
 
 @router.get(
     "/{project_id}/workflow/history",
+    dependencies=[Depends(get_accessible_project)],
     response_model=list[WorkflowEventResponse],
 )
 def get_workflow_history(

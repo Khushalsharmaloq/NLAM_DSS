@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user, require_roles
 from app.database import get_db
+from app.core.project_access_dependency import get_accessible_project, project_scope
 from app.models.project import Project
 from app.schemas.project import ProjectCreate, ProjectResponse
 
@@ -28,11 +29,21 @@ def create_project(
 
     project = Project(
         name=payload.name,
-        state=payload.state,
-        district=payload.district,
+        state=actor.state or payload.state,
+        district=actor.district or payload.district,
         proposed_area_ha=payload.proposed_area_ha,
         status="DRAFT",
+        owner_username=actor.username,
+        agency=payload.agency,
+        sector=payload.sector,
+        description=payload.description,
+        target_date=payload.target_date,
     )
+
+    if not actor.state or payload.state.casefold() != actor.state.casefold():
+        raise HTTPException(403, "Project state must match your assigned jurisdiction.")
+    if actor.district and payload.district.casefold() != actor.district.casefold():
+        raise HTTPException(403, "Project district must match your assigned jurisdiction.")
 
     db.add(project)
     db.commit()
@@ -47,9 +58,10 @@ def create_project(
 )
 def list_projects(
     db: Session = Depends(get_db),
+    user=Depends(get_current_user),
 ):
 
-    statement = select(Project).order_by(
+    statement = select(Project).where(project_scope(user)).order_by(
         Project.id.desc()
     )
 
@@ -61,16 +73,27 @@ def list_projects(
     response_model=ProjectResponse,
 )
 def get_project(
-    project_id: int,
-    db: Session = Depends(get_db),
+    project: Project = Depends(get_accessible_project),
 ):
+    return project
 
-    project = db.get(Project, project_id)
 
-    if project is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Project not found",
-        )
-
+@router.patch("/{project_id}", response_model=ProjectResponse)
+def update_project(project_id: int, payload: ProjectCreate,
+                   actor=Depends(require_roles("PROJECT_OFFICER")),
+                   project: Project = Depends(get_accessible_project),
+                   db: Session = Depends(get_db)):
+    project = db.execute(select(Project).where(Project.id == project_id).with_for_update()).scalar_one()
+    if project.status not in ("DRAFT", "RETURNED"):
+        raise HTTPException(409, "Only draft or returned proposals may be edited.")
+    if payload.state.casefold() != (actor.state or "").casefold() or (
+        actor.district and payload.district.casefold() != actor.district.casefold()
+    ):
+        raise HTTPException(403, "Project location must match your assigned jurisdiction.")
+    for field in ("name", "proposed_area_ha", "agency", "sector", "description", "target_date"):
+        setattr(project, field, getattr(payload, field))
+    project.state = actor.state
+    project.district = actor.district or payload.district
+    db.commit()
+    db.refresh(project)
     return project

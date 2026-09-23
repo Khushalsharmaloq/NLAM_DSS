@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user, require_roles
+from app.core.project_access_dependency import get_accessible_project
 from app.database import get_db
 from app.models.project import Project
 
@@ -71,6 +72,7 @@ def find_project(db: Session, project_id: int):
 
 @router.post(
     "/{project_id}/parcels",
+    dependencies=[Depends(get_accessible_project)],
     response_model=ParcelResponse,
     status_code=status.HTTP_201_CREATED,
 )
@@ -130,6 +132,7 @@ def create_parcel(
                     land_type,
                     area_ha,
                     acquisition_status,
+                    recorded_by_username,
                     geom,
                     created_at
                 )
@@ -141,6 +144,7 @@ def create_parcel(
                     :land_type,
                     :area_ha,
                     'PROPOSED',
+                    :actor,
                     {geometry_sql},
                     NOW()
                 )
@@ -150,6 +154,7 @@ def create_parcel(
             ),
             {
                 "project_id": project_id,
+                "actor": actor.username,
                 "survey_number": payload.survey_number,
                 "village": payload.village,
                 "land_type": payload.land_type,
@@ -183,6 +188,7 @@ def create_parcel(
 
 @router.get(
     "/{project_id}/parcels",
+    dependencies=[Depends(get_accessible_project)],
     response_model=list[ParcelResponse],
 )
 def list_parcels(
@@ -205,6 +211,7 @@ def list_parcels(
 
 @router.get(
     "/{project_id}/parcels/geojson",
+    dependencies=[Depends(get_accessible_project)],
 )
 def project_parcel_geojson(
     project_id: int,
@@ -243,6 +250,7 @@ def project_parcel_geojson(
 
 @router.get(
     "/{project_id}/parcels/{parcel_id}",
+    dependencies=[Depends(get_accessible_project)],
     response_model=ParcelResponse,
 )
 def get_parcel(

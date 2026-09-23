@@ -161,6 +161,7 @@ export function AuthProvider({
 }
 
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth(): AuthContextValue {
 
   const context = useContext(AuthContext)

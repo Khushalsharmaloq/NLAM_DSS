@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -27,6 +27,11 @@ class ProjectCreate(BaseModel):
         decimal_places=4,
     )
 
+    agency: str | None = Field(default=None, max_length=180)
+    sector: str | None = Field(default=None, max_length=80)
+    description: str | None = Field(default=None, max_length=2000)
+    target_date: date | None = None
+
 
 class ProjectResponse(ProjectCreate):
 
@@ -37,5 +42,7 @@ class ProjectResponse(ProjectCreate):
     id: int
 
     status: str
+
+    owner_username: str | None
 
     created_at: datetime

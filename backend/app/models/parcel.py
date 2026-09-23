@@ -70,6 +70,8 @@ class Parcel(Base):
         default="PROPOSED",
     )
 
+    recorded_by_username: Mapped[str | None] = mapped_column(String(80))
+
     geom: Mapped[WKBElement] = mapped_column(
         Geometry(
             geometry_type="POLYGON",

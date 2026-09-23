@@ -40,6 +40,8 @@ def serialize_user(user: User) -> UserResponse:
         username=user.username,
         full_name=user.full_name,
         role=user.role,
+        state=user.state,
+        district=user.district,
         is_active=user.is_active,
         created_at=user.created_at,
     )

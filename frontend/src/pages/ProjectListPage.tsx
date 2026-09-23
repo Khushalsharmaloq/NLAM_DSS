@@ -6,12 +6,14 @@ import {
 } from 'react-router-dom'
 
 import ProjectTable from '../components/projects/ProjectTable'
+import { useAuth } from '../auth/AuthContext'
 
 import { getProjects } from '../services/api'
 
 import type { Project } from '../types/project'
 
 export default function ProjectListPage() {
+  const { user } = useAuth()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -90,12 +92,12 @@ export default function ProjectListPage() {
           </p>
         </div>
 
-        <Link
+        {user?.role === 'PROJECT_OFFICER' && <Link
           className="button button-primary"
           to="/projects/new"
         >
           Create project
-        </Link>
+        </Link>}
       </div>
 
       {error && (

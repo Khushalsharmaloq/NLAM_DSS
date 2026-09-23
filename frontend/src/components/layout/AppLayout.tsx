@@ -37,22 +37,24 @@ export default function AppLayout() {
   return (
     <div className="app-shell">
 
+      <a className="skip-link" href="#main-content">Skip to main content</a>
+
       <aside className="sidebar">
 
         <div className="brand">
 
           <div className="brand-symbol">
-            NL
+            ◈
           </div>
 
           <div>
 
             <div className="brand-title">
-              NLAM DSS
+              NLAM
             </div>
 
             <div className="brand-subtitle">
-              Land Administration
+              National land management
             </div>
 
           </div>
@@ -61,7 +63,7 @@ export default function AppLayout() {
 
 
         <div className="sidebar-section">
-          WORKSPACE
+          OPERATIONS
         </div>
 
 
@@ -76,7 +78,7 @@ export default function AppLayout() {
               isActive ? 'nav-active' : ''
             }
           >
-            Overview
+            <span aria-hidden="true" className="nav-icon">◫</span> Overview
           </NavLink>
 
 
@@ -87,7 +89,7 @@ export default function AppLayout() {
               isActive ? 'nav-active' : ''
             }
           >
-            Project register
+            <span aria-hidden="true" className="nav-icon">▤</span> Project register
           </NavLink>
 
 
@@ -99,10 +101,24 @@ export default function AppLayout() {
                 isActive ? 'nav-active' : ''
               }
             >
-              New project
+              <span aria-hidden="true" className="nav-icon">＋</span> New proposal
             </NavLink>
 
           )}
+
+          <NavLink to="/reports" className={({ isActive }) => isActive ? 'nav-active' : ''}>
+            <span aria-hidden="true" className="nav-icon">▥</span> Reports &amp; MIS
+          </NavLink>
+          <NavLink to="/alerts" className={({ isActive }) => isActive ? 'nav-active' : ''}>
+            <span aria-hidden="true" className="nav-icon">◉</span> Alerts
+          </NavLink>
+          {user?.role === 'SYSTEM_ADMIN' && <NavLink to="/administration"
+            className={({ isActive }) => isActive ? 'nav-active' : ''}>
+            <span aria-hidden="true" className="nav-icon">⚙</span> Administration
+          </NavLink>}
+          <NavLink to="/account" className={({ isActive }) => isActive ? 'nav-active' : ''}>
+            <span aria-hidden="true" className="nav-icon">◎</span> Account settings
+          </NavLink>
 
         </nav>
 
@@ -110,16 +126,15 @@ export default function AppLayout() {
         <div className="sidebar-bottom">
 
           <div className="environment-label">
-            DEVELOPMENT ENVIRONMENT
+            LOCAL WORKSPACE
           </div>
 
           <div className="environment-description">
-            Prototype system. Use synthetic demonstration
-            records only.
+            Synthetic demonstration records. No statutory approvals or payments are issued here.
           </div>
 
           <div className="sidebar-version">
-            Application v0.1.0
+            PS 26016 · Version 1.0
           </div>
 
         </div>
@@ -132,14 +147,15 @@ export default function AppLayout() {
         <header className="topbar">
 
           <div className="topbar-heading">
-            National Land Acquisition &amp; Management System
+            <span className="topbar-ministry">Ministry of Rural Development · Department of Land Resources</span>
+            <strong>National Land Acquisition &amp; Management System</strong>
           </div>
 
 
           <div className="topbar-right">
 
             <span className="environment-badge">
-              LOCAL PROTOTYPE
+              DEMONSTRATION
             </span>
 
             <div className="account-info">
@@ -149,7 +165,7 @@ export default function AppLayout() {
               </strong>
 
               <span>
-                {user ? formatRole(user.role) : ''}
+                {user ? `${formatRole(user.role)}${user.state ? ` · ${user.state}` : ''}` : ''}
               </span>
 
             </div>
@@ -167,7 +183,7 @@ export default function AppLayout() {
         </header>
 
 
-        <main className="page-content">
+        <main id="main-content" className="page-content">
 
           <Outlet />
 

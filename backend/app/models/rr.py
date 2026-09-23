@@ -87,6 +87,10 @@ class RRHousehold(Base):
         nullable=True,
     )
 
+    progress_status: Mapped[str] = mapped_column(
+        String(25), nullable=False, default="IDENTIFIED"
+    )
+
     created_by_username: Mapped[str] = mapped_column(
         String(80),
         nullable=False,

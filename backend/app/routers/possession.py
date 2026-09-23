@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user
+from app.core.project_access_dependency import get_accessible_project
 from app.database import get_db
 
 from app.models.parcel import Parcel
@@ -58,7 +59,7 @@ def require_project(db: Session, project_id: int) -> Project:
     return project
 
 
-@router.get("/{project_id}/possession-progress")
+@router.get("/{project_id}/possession-progress", dependencies=[Depends(get_accessible_project)])
 def list_parcel_progress(
     project_id: int,
     db: Session = Depends(get_db),
@@ -124,6 +125,7 @@ def list_parcel_progress(
 
 @router.post(
     "/{project_id}/parcels/{parcel_id}/progress",
+    dependencies=[Depends(get_accessible_project)],
     status_code=201,
 )
 def record_parcel_progress(

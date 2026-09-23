@@ -6,6 +6,7 @@ import {
 } from 'react-router-dom'
 
 import ParcelGIS from '../ParcelGIS'
+import LandLookupPanel from '../components/integrations/LandLookupPanel'
 
 import { getProject } from '../services/api'
 
@@ -97,6 +98,7 @@ export default function ProjectGISPage() {
             key={project.id}
             projectId={project.id}
           />
+          <LandLookupPanel projectId={project.id} />
         </>
       )}
     </>

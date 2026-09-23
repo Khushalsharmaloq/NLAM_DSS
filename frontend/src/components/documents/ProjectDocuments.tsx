@@ -18,6 +18,8 @@ type DocumentRecord = {
   notes: string | null
   uploaded_by_username: string
   uploaded_at: string
+  version: number
+  supersedes_id: number | null
 }
 
 const DOCUMENT_TYPES = [
@@ -63,6 +65,7 @@ export default function ProjectDocuments({
   const [documents, setDocuments] = useState<DocumentRecord[]>([])
   const [documentType, setDocumentType] = useState('PROPOSAL')
   const [notes, setNotes] = useState('')
+  const [replacesId, setReplacesId] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [inputKey, setInputKey] = useState(0)
 
@@ -145,6 +148,7 @@ export default function ProjectDocuments({
     const formData = new FormData()
     formData.append('document_type', documentType)
     formData.append('notes', notes)
+    if (replacesId) formData.append('replaces_document_id', replacesId)
     formData.append('file', file)
 
     try {
@@ -159,6 +163,7 @@ export default function ProjectDocuments({
 
       setFile(null)
       setNotes('')
+      setReplacesId('')
       setInputKey((current) => current + 1)
       setNotice('Document uploaded successfully.')
 
@@ -279,6 +284,15 @@ export default function ProjectDocuments({
                 }
               />
             </div>
+            <div className="form-field">
+              <label htmlFor="document-replaces">Replace a previous version (optional)</label>
+              <select id="document-replaces" value={replacesId}
+                onChange={(event) => setReplacesId(event.target.value)}>
+                <option value="">New document</option>
+                {documents.filter((item) => item.document_type === documentType).map((item) =>
+                  <option value={item.id} key={item.id}>{item.original_filename} · v{item.version}</option>)}
+              </select>
+            </div>
 
             <div className="form-field documents-notes">
               <label htmlFor="document-notes">
@@ -335,7 +349,8 @@ export default function ProjectDocuments({
                 {documents.map((item) => (
                   <tr key={item.id}>
                     <td>
-                      <strong>{item.original_filename}</strong>
+                      <strong>{item.original_filename} · v{item.version}</strong>
+                      {item.supersedes_id && <span>Replaces document #{item.supersedes_id}</span>}
                       <span>
                         {(item.size_bytes / 1024).toFixed(1)} KB
                       </span>

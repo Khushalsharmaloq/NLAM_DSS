@@ -25,6 +25,10 @@ class UserResponse(BaseModel):
 
     role: str
 
+    state: str | None
+
+    district: str | None
+
     is_active: bool
 
     created_at: datetime

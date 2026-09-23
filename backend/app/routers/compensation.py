@@ -17,6 +17,7 @@ from app.core.dependencies import (
     require_roles,
 )
 
+from app.core.project_access_dependency import get_accessible_project
 from app.database import get_db
 
 from app.models.compensation import CompensationEstimate
@@ -50,6 +51,7 @@ def require_project(
 
 @router.get(
     "/{project_id}/compensation-estimates",
+    dependencies=[Depends(get_accessible_project)],
     response_model=list[CompensationEstimateResponse],
 )
 def list_compensation_estimates(
@@ -69,6 +71,7 @@ def list_compensation_estimates(
 
 @router.post(
     "/{project_id}/compensation-estimates",
+    dependencies=[Depends(get_accessible_project)],
     response_model=CompensationEstimateResponse,
     status_code=201,
 )

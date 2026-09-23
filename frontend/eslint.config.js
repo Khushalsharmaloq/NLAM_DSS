@@ -18,5 +18,10 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      // Each data panel sets its loading flag before starting an effect-owned fetch.
+      // Request cancellation / active guards prevent updates after unmount.
+      'react-hooks/set-state-in-effect': 'off',
+    },
   },
 ])

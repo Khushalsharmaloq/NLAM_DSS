@@ -13,6 +13,7 @@ from app.core.dependencies import (
     require_roles,
 )
 
+from app.core.project_access_dependency import get_accessible_project
 from app.database import get_db
 from app.models.parcel import Parcel
 from app.models.project import Project
@@ -45,6 +46,7 @@ def require_project(
 
 @router.get(
     "/{project_id}/rr-households",
+    dependencies=[Depends(get_accessible_project)],
     response_model=list[RRHouseholdResponse],
 )
 def list_rr_households(
@@ -62,6 +64,7 @@ def list_rr_households(
 
 @router.post(
     "/{project_id}/rr-households",
+    dependencies=[Depends(get_accessible_project)],
     response_model=RRHouseholdResponse,
     status_code=201,
 )

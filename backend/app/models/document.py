@@ -60,6 +60,11 @@ class ProjectDocument(Base):
         nullable=True,
     )
 
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    supersedes_id: Mapped[int | None] = mapped_column(
+        ForeignKey("project_documents.id"), nullable=True, unique=True
+    )
+
     uploaded_by_username: Mapped[str] = mapped_column(
         String(80),
         nullable=False,

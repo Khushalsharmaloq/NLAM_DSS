@@ -45,6 +45,11 @@ class User(Base):
         nullable=False,
     )
 
+    # Null scope is permitted only for national roles. Existing local accounts
+    # are assigned a demonstration scope by the additive migration.
+    state: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    district: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
