@@ -97,6 +97,8 @@ export default function ProjectGISPage() {
           <ParcelGIS
             key={project.id}
             projectId={project.id}
+            projectStatus={project.status}
+            proposedAreaHa={Number(project.proposed_area_ha)}
           />
           <LandLookupPanel projectId={project.id} />
         </>

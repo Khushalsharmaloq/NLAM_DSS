@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class PolygonGeometry(BaseModel):
@@ -78,6 +78,19 @@ class ParcelCreate(BaseModel):
     )
 
     geometry: PolygonGeometry
+
+
+class ParcelBoundaryCorrection(BaseModel):
+    geometry: PolygonGeometry
+    reason: str = Field(min_length=10, max_length=500)
+
+    @field_validator("reason")
+    @classmethod
+    def reason_required(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 10:
+            raise ValueError("Explain the correction in at least 10 characters.")
+        return value
 
 
 class ParcelResponse(BaseModel):

@@ -7,17 +7,19 @@ from fastapi import (
     status,
 )
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user, require_roles
 from app.core.project_access_dependency import get_accessible_project
 from app.database import get_db
+from app.models.parcel import ParcelBoundaryRevision
 from app.models.project import Project
 
 from app.schemas.parcel import (
     ParcelCreate,
+    ParcelBoundaryCorrection,
     ParcelResponse,
 )
 
@@ -184,6 +186,75 @@ def create_parcel(
         parcel_id,
         db,
     )
+
+
+@router.patch(
+    "/{project_id}/parcels/{parcel_id}/boundary",
+    dependencies=[Depends(get_accessible_project)],
+    response_model=ParcelResponse,
+)
+def correct_parcel_boundary(
+    project_id: int,
+    parcel_id: int,
+    payload: ParcelBoundaryCorrection,
+    db: Session = Depends(get_db),
+    actor=Depends(require_roles("PROJECT_OFFICER")),
+):
+    """Correct a draft parcel; retain both geometries for project audit."""
+    project = db.scalar(
+        select(Project).where(Project.id == project_id).with_for_update()
+    )
+    if project.status not in ("DRAFT", "RETURNED"):
+        raise HTTPException(409, "Only draft or returned parcel boundaries can be corrected.")
+
+    previous = db.execute(text("""
+        SELECT area_ha, ST_AsGeoJSON(geom)::jsonb AS geometry
+        FROM land_parcels
+        WHERE id = :parcel_id AND project_id = :project_id
+        FOR UPDATE
+    """), {"parcel_id": parcel_id, "project_id": project_id}).mappings().first()
+    if previous is None:
+        raise HTTPException(404, "Parcel not found.")
+
+    # Follow-on records must refer to a stable, verified boundary.
+    linked = db.execute(text("""
+        SELECT
+            EXISTS (SELECT 1 FROM notification_parcels WHERE parcel_id = :parcel_id)
+         OR EXISTS (SELECT 1 FROM acquisition_awards WHERE parcel_id = :parcel_id)
+         OR EXISTS (SELECT 1 FROM compensation_estimates WHERE parcel_id = :parcel_id)
+         OR EXISTS (SELECT 1 FROM rr_households WHERE parcel_id = :parcel_id)
+         OR EXISTS (SELECT 1 FROM parcel_progress_events WHERE parcel_id = :parcel_id)
+        AS has_linked_records
+    """), {"parcel_id": parcel_id}).scalar_one()
+    if linked:
+        raise HTTPException(409, "This parcel has linked records. Review them before correcting its boundary.")
+
+    geometry_json = json.dumps(payload.geometry.model_dump())
+    geometry_sql = "ST_SetSRID(ST_GeomFromGeoJSON(:geometry), 4326)"
+    validation = db.execute(text(f"""
+        SELECT ST_IsValid({geometry_sql}) AS valid,
+               ST_IsEmpty({geometry_sql}) AS empty,
+               ST_Area({geometry_sql}::geography) / 10000 AS area_ha
+    """), {"geometry": geometry_json}).mappings().one()
+    if not validation["valid"] or validation["empty"] or validation["area_ha"] <= 0:
+        raise HTTPException(422, "Invalid or empty parcel boundary.")
+
+    db.execute(text(f"""
+        UPDATE land_parcels
+        SET geom = {geometry_sql}, area_ha = :area_ha
+        WHERE id = :parcel_id AND project_id = :project_id
+    """), {"geometry": geometry_json, "area_ha": validation["area_ha"],
+           "parcel_id": parcel_id, "project_id": project_id})
+    db.add(ParcelBoundaryRevision(
+        project_id=project_id, parcel_id=parcel_id,
+        previous_geometry=previous["geometry"],
+        corrected_geometry=payload.geometry.model_dump(),
+        previous_area_ha=previous["area_ha"],
+        corrected_area_ha=validation["area_ha"],
+        reason=payload.reason, actor_reference=actor.username,
+    ))
+    db.commit()
+    return get_parcel(project_id, parcel_id, db)
 
 
 @router.get(

@@ -10,8 +10,11 @@ from sqlalchemy import (
     Integer,
     Numeric,
     String,
+    Text,
     UniqueConstraint,
+    func,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -85,4 +88,27 @@ class Parcel(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
+    )
+
+
+class ParcelBoundaryRevision(Base):
+    """Immutable before/after snapshots for a corrected draft boundary."""
+
+    __tablename__ = "parcel_boundary_revisions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    project_id: Mapped[int] = mapped_column(
+        ForeignKey("projects.id"), nullable=False, index=True,
+    )
+    parcel_id: Mapped[int] = mapped_column(
+        ForeignKey("land_parcels.id"), nullable=False, index=True,
+    )
+    previous_geometry: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    corrected_geometry: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    previous_area_ha: Mapped[Decimal] = mapped_column(Numeric(14, 4), nullable=False)
+    corrected_area_ha: Mapped[Decimal] = mapped_column(Numeric(14, 4), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    actor_reference: Mapped[str] = mapped_column(String(80), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False,
     )

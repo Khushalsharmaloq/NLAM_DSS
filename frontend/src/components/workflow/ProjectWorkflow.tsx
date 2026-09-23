@@ -416,9 +416,9 @@ export default function ProjectWorkflow({
               )}
 
               <div className="workflow-prototype-note">
-                Prototype simulation only. Authentication
-                and authorized officer approvals will be
-                implemented separately.
+                Demonstration workflow. Role permissions and
+                transition history are enforced. Recorded decisions
+                do not issue statutory approvals.
               </div>
             </div>
 

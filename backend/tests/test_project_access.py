@@ -12,6 +12,7 @@ from app.database import get_db
 from app.main import app
 from app.models.project import Project
 from app.models.user import User
+from app.models.workflow import ProjectWorkflowEvent
 
 
 @pytest.fixture
@@ -20,6 +21,7 @@ def client_and_users():
         connect_args={"check_same_thread": False}, poolclass=StaticPool)
     User.__table__.create(engine)
     Project.__table__.create(engine)
+    ProjectWorkflowEvent.__table__.create(engine)
     with Session(engine) as db:
         db.add_all([
             Project(name="Own project", state="Uttar Pradesh", district="Lucknow",
@@ -83,3 +85,23 @@ def test_project_state_and_district_cannot_escape_assignment(client_and_users):
     response = client.post("/api/v1/projects", json=body)
     assert response.status_code == 201, response.text
     assert response.json()["owner_username"] == "one"
+
+
+def test_boundary_correction_requires_owner_role_and_draft(client_and_users):
+    client, actor = client_and_users
+    path = "/api/v1/projects/1/parcels/1/boundary"
+    body = {"reason": "Correct an oversized demonstration boundary.",
+            "geometry": {"type": "Polygon", "coordinates": [[
+                [80.95, 26.85], [80.951, 26.85], [80.95, 26.851], [80.95, 26.85]
+            ]]}}
+
+    assert client.patch("/api/v1/projects/2/parcels/1/boundary", json=body).status_code == 404
+    actor[0].role = "DISTRICT_AUTHORITY"
+    assert client.patch(path, json=body).status_code == 403
+    actor[0].role = "PROJECT_OFFICER"
+    assert client.patch(path, json={**body, "reason": "   "}).status_code == 422
+
+    submitted = client.post("/api/v1/projects/1/workflow/transition",
+                            json={"action": "SUBMIT"})
+    assert submitted.status_code == 200, submitted.text
+    assert client.patch(path, json=body).status_code == 409

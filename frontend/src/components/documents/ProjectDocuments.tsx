@@ -76,6 +76,12 @@ export default function ProjectDocuments({
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
+  const supersededDocumentIds = new Set(
+    documents.flatMap((item) =>
+      item.supersedes_id === null ? [] : [item.supersedes_id]
+    )
+  )
+
   const basePath = `/api/v1/projects/${projectId}/documents`
 
   useEffect(() => {
@@ -289,8 +295,11 @@ export default function ProjectDocuments({
               <select id="document-replaces" value={replacesId}
                 onChange={(event) => setReplacesId(event.target.value)}>
                 <option value="">New document</option>
-                {documents.filter((item) => item.document_type === documentType).map((item) =>
-                  <option value={item.id} key={item.id}>{item.original_filename} · v{item.version}</option>)}
+                {documents.filter((item) => item.document_type === documentType &&
+                  !supersededDocumentIds.has(item.id)).map((item) =>
+                  <option value={item.id} key={item.id}>
+                    {item.original_filename} · v{item.version} · record #{item.id}
+                  </option>)}
               </select>
             </div>
 

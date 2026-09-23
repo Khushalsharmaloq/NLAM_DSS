@@ -119,12 +119,34 @@
   width: 100%;
   padding: 15px 19px;
   border: 0;
-  border-bottom: 1px solid #e0e5dd;
+  border-bottom: 0;
   background: transparent;
   text-align: left;
   display: flex;
   flex-direction: column;
   gap: 7px;
+}
+
+.gis-parcel-entry {
+  border-bottom: 1px solid #e0e5dd;
+}
+
+.gis-correct-button {
+  margin: 0 19px 14px;
+  padding: 8px 12px;
+  border: 1px solid #b7cabd;
+  border-radius: 6px;
+  background: #fff;
+  color: #24533f;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gis-correct-button:hover,
+.gis-correct-button:focus-visible {
+  background: #e8f1e9;
 }
 
 .gis-parcel-item:hover {

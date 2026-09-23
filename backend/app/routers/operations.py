@@ -1,5 +1,5 @@
 """Payments ledger, R&R progress, milestones, and scoped activity feed."""
-from datetime import date
+from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Literal
 
@@ -16,7 +16,7 @@ from app.models.acquisition import AcquisitionAward, AcquisitionNotification
 from app.models.document import ProjectDocument
 from app.models.compensation import CompensationEstimate
 from app.models.operations import CompensationPayment, ProjectMilestone, RRProgressEvent
-from app.models.parcel import Parcel
+from app.models.parcel import Parcel, ParcelBoundaryRevision
 from app.models.possession import ParcelProgressEvent
 from app.models.project import Project
 from app.models.rr import RRHousehold
@@ -226,6 +226,19 @@ def project_audit(project_id: int, db: Session = Depends(get_db)):
                            "detail": str(getattr(row, title_field)),
                            "actor": getattr(row, actor_field) or "Legacy record",
                            "at": getattr(row, date_field)})
+    for revision in db.scalars(select(ParcelBoundaryRevision).where(
+        ParcelBoundaryRevision.project_id == project_id)
+        .order_by(ParcelBoundaryRevision.id.desc()).limit(100)):
+        result.append({
+            "id": f"Boundary correction-{revision.id}",
+            "kind": "Boundary correction",
+            "detail": (
+                f"Parcel {revision.parcel_id}: {revision.previous_area_ha:.4f} ha"
+                f" to {revision.corrected_area_ha:.4f} ha. {revision.reason}"
+            ),
+            "actor": revision.actor_reference,
+            "at": revision.created_at,
+        })
     for milestone in db.scalars(select(ProjectMilestone).where(
         ProjectMilestone.project_id == project_id, ProjectMilestone.completed_date.is_not(None))):
         result.append({"id": f"Milestone completed-{milestone.id}", "kind": "Milestone completed",
@@ -235,4 +248,12 @@ def project_audit(project_id: int, db: Session = Depends(get_db)):
     result.append({"id": f"Project-{project_id}", "kind": "Project registered",
                    "detail": project.name, "actor": project.owner_username or "Legacy record",
                    "at": project.created_at})
-    return sorted(result, key=lambda item: str(item["at"]), reverse=True)[:250]
+    def audit_order(entry):
+        recorded_at = entry["at"]
+        if isinstance(recorded_at, datetime):
+            return (recorded_at.date(), 0, recorded_at.time(), entry["id"])
+        # A completed milestone stores a date without a time. Keep these
+        # entries together at the start of that day's events.
+        return (recorded_at, 1, time.min, entry["id"])
+
+    return sorted(result, key=audit_order, reverse=True)[:250]

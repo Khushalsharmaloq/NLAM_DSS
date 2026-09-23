@@ -31,6 +31,8 @@ type ParcelForm = {
 
 type ParcelGISProps = {
   projectId: number
+  projectStatus: string
+  proposedAreaHa: number
 }
 
 const emptyForm: ParcelForm = {
@@ -48,6 +50,8 @@ function formatArea(value: number): string {
 
 export default function ParcelGIS({
   projectId,
+  projectStatus,
+  proposedAreaHa,
 }: ParcelGISProps) {
   const { user } = useAuth()
 
@@ -74,6 +78,10 @@ export default function ParcelGIS({
   const [vertexCount, setVertexCount] = useState(0)
 
   const [form, setForm] = useState<ParcelForm>(emptyForm)
+
+  const [correcting, setCorrecting] = useState<Parcel | null>(null)
+
+  const [correctionReason, setCorrectionReason] = useState('')
 
   const [error, setError] = useState('')
 
@@ -157,7 +165,7 @@ export default function ParcelGIS({
 
     const map = L.map(mapElementRef.current, {
       zoomControl: true,
-    }).setView([21.1458, 79.0882], 12)
+    }).setView([22.6, 79.0], 5)
 
     mapRef.current = map
 
@@ -301,9 +309,17 @@ export default function ParcelGIS({
     }
   }, [parcels])
 
-  function startDrawing() {
+  function startDrawing(parcel?: Parcel) {
     setError('')
     setNotice('')
+
+    setCorrecting(parcel ?? null)
+    setCorrectionReason('')
+    setForm(parcel ? {
+      survey_number: parcel.survey_number,
+      village: parcel.village,
+      land_type: parcel.land_type,
+    } : emptyForm)
 
     drawingRef.current = true
     verticesRef.current = []
@@ -332,6 +348,10 @@ export default function ParcelGIS({
     setVertexCount(0)
     setDrawing(false)
 
+    setCorrecting(null)
+
+    setCorrectionReason('')
+
     updatePreview([])
 
     setError('')
@@ -352,6 +372,11 @@ export default function ParcelGIS({
       return
     }
 
+    if (correcting && correctionReason.trim().length < 10) {
+      setError('Explain the boundary correction in at least 10 characters.')
+      return
+    }
+
     setSaving(true)
     setError('')
     setNotice('')
@@ -365,22 +390,27 @@ export default function ParcelGIS({
 
     coordinates.push([...coordinates[0]])
 
-    const payload = {
-      survey_number: form.survey_number.trim(),
-      village: form.village.trim(),
-      land_type: form.land_type,
-
-      geometry: {
-        type: 'Polygon',
-        coordinates: [coordinates],
-      },
+    const geometry = {
+      type: 'Polygon',
+      coordinates: [coordinates],
     }
+
+    const payload = correcting
+      ? { geometry, reason: correctionReason.trim() }
+      : {
+        survey_number: form.survey_number.trim(),
+        village: form.village.trim(),
+        land_type: form.land_type,
+        geometry,
+      }
 
     try {
       const response = await apiFetch(
-        `/api/v1/projects/${projectId}/parcels`,
+        correcting
+          ? `/api/v1/projects/${projectId}/parcels/${correcting.id}/boundary`
+          : `/api/v1/projects/${projectId}/parcels`,
         {
-          method: 'POST',
+          method: correcting ? 'PATCH' : 'POST',
 
           headers: {
             'Content-Type': 'application/json',
@@ -392,7 +422,7 @@ export default function ParcelGIS({
 
       if (!response.ok) {
         let message =
-          `Unable to register parcel (${response.status}).`
+          `Unable to save parcel boundary (${response.status}).`
 
         try {
           const result = await response.json()
@@ -415,14 +445,20 @@ export default function ParcelGIS({
       setVertexCount(0)
       setDrawing(false)
 
+      setCorrecting(null)
+
+      setCorrectionReason('')
+
       updatePreview([])
 
       setForm(emptyForm)
 
-      setNotice(
-        `Parcel ${created.survey_number} registered successfully. ` +
-        `Calculated area: ${formatArea(Number(created.area_ha))} hectares.`
-      )
+      setNotice(correcting
+        ? `Parcel ${created.survey_number} boundary corrected. ` +
+          `Calculated area: ${formatArea(Number(created.area_ha))} hectares. ` +
+          'The original boundary remains in project audit history.'
+        : `Parcel ${created.survey_number} registered successfully. ` +
+          `Calculated area: ${formatArea(Number(created.area_ha))} hectares.`)
 
       await loadParcels()
     } catch (err) {
@@ -440,6 +476,9 @@ export default function ParcelGIS({
     (sum, parcel) => sum + Number(parcel.area_ha),
     0
   )
+
+  const canCorrect = user?.role === 'PROJECT_OFFICER' &&
+    (projectStatus === 'DRAFT' || projectStatus === 'RETURNED')
 
   return (
     <section className="panel gis-section">
@@ -493,6 +532,14 @@ export default function ParcelGIS({
         </div>
       )}
 
+      {parcels.length > 0 && totalParcelArea > proposedAreaHa + 0.0001 && (
+        <div className="gis-message gis-error" role="status">
+          Mapped parcels total {formatArea(totalParcelArea)} ha, above the
+          project proposal of {formatArea(proposedAreaHa)} ha. Check the
+          boundary or edit the proposal before submitting it for review.
+        </div>
+      )}
+
       <div className="gis-layout">
         <div className="gis-map-area">
           <div className="gis-map-toolbar">
@@ -507,7 +554,7 @@ export default function ParcelGIS({
               <button
                 type="button"
                 className="button button-primary"
-                onClick={startDrawing}
+                onClick={() => startDrawing()}
               >
                 Draw new parcel
               </button>
@@ -577,10 +624,10 @@ export default function ParcelGIS({
 
               {!loading &&
                 parcels.map((parcel) => (
-                  <button
+                  <div className="gis-parcel-entry" key={parcel.id}>
+                    <button
                     type="button"
                     className="gis-parcel-item"
-                    key={parcel.id}
                     onClick={() => {
                       const map = mapRef.current
 
@@ -613,7 +660,14 @@ export default function ParcelGIS({
                     </span>
 
                     <small>{parcel.acquisition_status}</small>
-                  </button>
+                    </button>
+                    {canCorrect && (
+                      <button type="button" className="gis-correct-button"
+                        onClick={() => startDrawing(parcel)}>
+                        Correct boundary
+                      </button>
+                    )}
+                  </div>
                 ))}
             </>
           ) : (
@@ -622,11 +676,12 @@ export default function ParcelGIS({
               onSubmit={saveParcel}
             >
               <div className="gis-side-heading">
-                <h3>Register a land parcel</h3>
+                <h3>{correcting ? `Correct ${correcting.survey_number}` : 'Register a land parcel'}</h3>
 
                 <p>
-                  Click on the map to mark the boundary
-                  of the new parcel.
+                  {correcting
+                    ? 'Click on the map to mark the corrected boundary.'
+                    : 'Click on the map to mark the boundary of the new parcel.'}
                 </p>
               </div>
 
@@ -649,7 +704,7 @@ export default function ParcelGIS({
                 </button>
               </div>
 
-              <div className="form-field">
+              {!correcting && <div className="form-field">
                 <label htmlFor="gis-survey">
                   Survey number
                 </label>
@@ -667,9 +722,9 @@ export default function ParcelGIS({
                   }
                   placeholder="Enter survey reference"
                 />
-              </div>
+              </div>}
 
-              <div className="form-field">
+              {!correcting && <div className="form-field">
                 <label htmlFor="gis-village">
                   Village
                 </label>
@@ -688,9 +743,9 @@ export default function ParcelGIS({
                   }
                   placeholder="Enter village name"
                 />
-              </div>
+              </div>}
 
-              <div className="form-field">
+              {!correcting && <div className="form-field">
                 <label htmlFor="gis-land-type">
                   Land type
                 </label>
@@ -729,16 +784,27 @@ export default function ParcelGIS({
                     Other
                   </option>
                 </select>
-              </div>
+              </div>}
+
+              {correcting && (
+                <div className="form-field">
+                  <label htmlFor="gis-correction-reason">Reason for correction</label>
+                  <textarea id="gis-correction-reason" required minLength={10}
+                    maxLength={500} rows={3} value={correctionReason}
+                    onChange={(event) => setCorrectionReason(event.target.value)}
+                    placeholder="Explain why the original boundary was inaccurate" />
+                </div>
+              )}
 
               <button
                 type="submit"
                 className="button button-primary gis-save-button"
-                disabled={saving || vertexCount < 3}
+                disabled={saving || vertexCount < 3 ||
+                  Boolean(correcting && correctionReason.trim().length < 10)}
               >
                 {saving
-                  ? 'Registering parcel...'
-                  : 'Register land parcel'}
+                  ? 'Saving boundary...'
+                  : correcting ? 'Save boundary correction' : 'Register land parcel'}
               </button>
             </form>
           )}
