@@ -69,7 +69,10 @@ from app.routers.rr import router as rr_router
 
 from app.routers.possession import router as possession_router
 
+from app.routers.mis import router as mis_router
+
 app.include_router(parcels_router)
+app.include_router(mis_router)
 app.include_router(possession_router)
 app.include_router(rr_router)
 app.include_router(compensation_router)
