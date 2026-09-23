@@ -18,6 +18,7 @@ import ProjectWorkflow from '../components/workflow/ProjectWorkflow'
 import ProjectDocuments from '../components/documents/ProjectDocuments'
 import ProjectCompensation from '../components/compensation/ProjectCompensation'
 import ProjectRR from '../components/rr/ProjectRR'
+import ProjectPossession from '../components/possession/ProjectPossession'
 
 export default function ProjectDetailPage() {
   const { projectId } = useParams()
@@ -180,6 +181,8 @@ export default function ProjectDetailPage() {
           <ProjectCompensation projectId={project.id} />
 
           <ProjectRR projectId={project.id} />
+
+          <ProjectPossession projectId={project.id} />
 
           <div className="information-note">
             Land parcel management is available through
