@@ -13,6 +13,38 @@ import { useAuth } from '../auth/AuthContext'
 import './LoginPage.css'
 
 
+async function offerBrowserPasswordSave(
+  username: string,
+  password: string
+): Promise<void> {
+  const browser = window as Window & {
+    PasswordCredential?: new (data: {
+      id: string
+      password: string
+    }) => Credential
+  }
+
+  if (
+    !window.isSecureContext ||
+    !browser.PasswordCredential ||
+    typeof navigator.credentials?.store !== 'function'
+  ) {
+    return
+  }
+
+  try {
+    const credential = new browser.PasswordCredential({
+      id: username,
+      password,
+    })
+
+    await navigator.credentials.store(credential)
+  } catch {
+    // Saving a password is optional. A browser decision
+    // must not prevent a successful application login.
+  }
+}
+
 export default function LoginPage() {
 
   const {
@@ -70,6 +102,11 @@ export default function LoginPage() {
     try {
 
       await login(username, password)
+
+      await offerBrowserPasswordSave(
+        username.trim().toLowerCase(),
+        password
+      )
 
       navigate(destination, {
         replace: true,

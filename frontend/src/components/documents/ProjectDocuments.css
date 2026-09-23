@@ -1,0 +1,128 @@
+.documents-section {
+  margin-top: 25px;
+}
+
+.documents-upload,
+.documents-register {
+  padding: 24px;
+}
+
+.documents-upload {
+  border-bottom: 1px solid #d9ded7;
+  background: #fafbf8;
+}
+
+.documents-upload h3,
+.documents-register h3 {
+  margin: 0 0 20px;
+  color: #263e35;
+  font-size: 14px;
+}
+
+.documents-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.documents-notes {
+  grid-column: 1 / -1;
+}
+
+.documents-notes textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd4c9;
+  border-radius: 2px;
+  background: #fff;
+  color: #26352f;
+  font: inherit;
+  font-size: 12px;
+  resize: vertical;
+}
+
+.documents-upload input[type="file"] {
+  width: 100%;
+  padding: 9px;
+  border: 1px solid #cbd4c9;
+  background: #fff;
+  font-size: 12px;
+}
+
+.documents-upload-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-top: 18px;
+}
+
+.documents-upload-footer p {
+  margin: 0;
+  color: #68736b;
+  font-size: 11px;
+}
+
+.documents-message {
+  padding: 13px 24px;
+  border-bottom: 1px solid #d9ded7;
+  font-size: 12px;
+}
+
+.documents-error {
+  color: #893c31;
+  background: #f6eae6;
+}
+
+.documents-success {
+  color: #365b33;
+  background: #e9f1e5;
+}
+
+.documents-table-wrapper {
+  overflow-x: auto;
+}
+
+.documents-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+
+.documents-table th {
+  padding: 12px;
+  border-bottom: 1px solid #d9ded7;
+  color: #657667;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.documents-table td {
+  padding: 15px 12px;
+  border-bottom: 1px solid #e0e5dd;
+  vertical-align: top;
+}
+
+.documents-table td strong,
+.documents-table td span {
+  display: block;
+}
+
+.documents-table td span {
+  margin-top: 6px;
+  color: #69776b;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 700px) {
+  .documents-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .documents-upload-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

@@ -35,6 +35,7 @@ services:
 
     volumes:
       - ./backend/app:/app/app
+      - nlam_documents_data:/app/uploads
 
     depends_on:
       db:
@@ -42,3 +43,4 @@ services:
 
 volumes:
   nlam_postgres_data:
+  nlam_documents_data:
