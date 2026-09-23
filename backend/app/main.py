@@ -10,6 +10,7 @@ from app.models.document import ProjectDocument
 from app.models.user import User
 from app.models.workflow import ProjectWorkflowEvent
 from app.models.parcel import Parcel
+from app.models.rr import RRHousehold
 from app.models.compensation import CompensationEstimate
 from app.routers.projects import router as projects_router
 from app.routers.auth import router as auth_router
@@ -63,7 +64,10 @@ from app.routers.documents import router as documents_router
 
 from app.routers.compensation import router as compensation_router
 
+from app.routers.rr import router as rr_router
+
 app.include_router(parcels_router)
+app.include_router(rr_router)
 app.include_router(compensation_router)
 app.include_router(documents_router)
 
