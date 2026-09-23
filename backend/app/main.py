@@ -1,0 +1,85 @@
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+
+from app.database import Base, engine
+from app.models.project import Project
+from app.models.workflow import ProjectWorkflowEvent
+from app.models.parcel import Parcel
+from app.routers.projects import router as projects_router
+from app.routers.workflow import router as workflow_router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+
+    with engine.begin() as connection:
+        connection.execute(
+            text("CREATE EXTENSION IF NOT EXISTS postgis")
+        )
+
+    Base.metadata.create_all(bind=engine)
+
+    yield
+
+    engine.dispose()
+
+
+app = FastAPI(
+    title="NLAM DSS API",
+    description=(
+        "National Land Acquisition and Management "
+        "Decision Support System"
+    ),
+    version="0.1.0",
+    lifespan=lifespan,
+)
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+)
+
+
+from app.routers.parcels import router as parcels_router
+
+app.include_router(projects_router)
+app.include_router(workflow_router)
+app.include_router(parcels_router)
+
+
+@app.get("/")
+def root():
+
+    return {
+        "application": "NLAM DSS",
+        "version": "0.1.0",
+        "status": "running",
+    }
+
+
+@app.get("/health")
+def health():
+
+    with engine.connect() as connection:
+
+        connection.execute(text("SELECT 1"))
+
+        postgis_version = connection.execute(
+            text("SELECT PostGIS_Version()")
+        ).scalar_one()
+
+    return {
+        "status": "healthy",
+        "database": "connected",
+        "postgis": postgis_version,
+    }

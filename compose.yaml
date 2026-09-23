@@ -1,0 +1,43 @@
+name: nlam-dss-fresh
+
+services:
+
+  db:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+
+    volumes:
+      - nlam_postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  api:
+    build:
+      context: ./backend
+
+    restart: unless-stopped
+
+    environment:
+      DATABASE_URL: postgresql+psycopg://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+
+    ports:
+      - "127.0.0.1:8001:8000"
+
+    volumes:
+      - ./backend/app:/app/app
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  nlam_postgres_data:
