@@ -2,6 +2,10 @@
 
 National Land Acquisition & Management Decision Support System (NLAM DSS). This README documents the **three commands confirmed working on the current Windows setup**, plus first-time preparation, links, and troubleshooting. Run commands in the VS Code **PowerShell** terminal.
 
+## Ask for complete setup before running project
+
+**ask any AI code assistant "how to run this project" - complete setup environment required.
+
 ## Run the project — the three working commands
 
 **Terminal 1 — from the project root (`NLAM_DSS`):**
@@ -33,10 +37,10 @@ If your terminal is **already inside `frontend/`**, run only `npm run dev -- --h
 
 | What | Local URL |
 | --- | --- |
-| Website (frontend) | http://127.0.0.1:5173/ |
-| API | http://127.0.0.1:8001/ |
-| Interactive API docs | http://127.0.0.1:8001/docs |
-| API/database health | http://127.0.0.1:8001/health |
+| Website (frontend) | <http://127.0.0.1:5173/> |
+| API | <http://127.0.0.1:8001/> |
+| Interactive API docs | <http://127.0.0.1:8001/docs> |
+| API/database health | <http://127.0.0.1:8001/health> |
 
 **Note:** The three commands start the existing application; they do not automatically create login accounts. If demo accounts have already been created, use your existing credentials. If this is a fresh database, see the optional demo-account setup below.
 
@@ -65,12 +69,12 @@ Demo usernames: `system.admin` (admin password above), `project.officer`, `distr
 | `no configuration file provided` | Run Docker commands from the project root, where `compose.yaml` is located. |
 | `JWT_SECRET must be configured` / missing DB variables | Check the root `.env` file for `DB_NAME`, `DB_USER`, `DB_PASSWORD`, and `JWT_SECRET`. Save it, then rerun `docker compose up -d --build`. |
 | Database is not healthy / API is restarting | Run `docker compose ps`, `docker compose logs --tail=100 db`, and `docker compose logs --tail=100 api`. Fix the reported error before retrying. |
-| API URL does not open | Verify `api` is `Up` with `docker compose ps`; inspect `docker compose logs --tail=100 api`. Open http://127.0.0.1:8001/health. |
+| API URL does not open | Verify `api` is `Up` with `docker compose ps`; inspect `docker compose logs --tail=100 api`. Open <http://127.0.0.1:8001/health>. |
 | Port `8001` or `5173` already in use | Stop the other program using that port, or stop an older instance of this project. Avoid starting a second frontend server. |
 | `npm` not recognized | Install Node.js, restart VS Code, and verify `node -v` and `npm -v`. |
 | PowerShell blocks `npm.ps1` | Use `npm.cmd install` for first-time installation and `npm.cmd run dev -- --host 127.0.0.1` to start the frontend. |
 | `vite` not recognized / missing package | From `frontend/`, run `npm install`, then rerun the frontend command. |
-| Frontend opens but login or data requests fail | Confirm http://127.0.0.1:8001/health works. Check browser DevTools → Network for the failed request and inspect API logs. If using a fresh database, seed demo accounts once. |
+| Frontend opens but login or data requests fail | Confirm <http://127.0.0.1:8001/health> works. Check browser DevTools → Network for the failed request and inspect API logs. If using a fresh database, seed demo accounts once. |
 | Demo username/password does not work | Check whether the accounts were seeded. Re-running the seed command **does not overwrite existing accounts or passwords**. Use the password originally set for that account. |
 | Changed `.env` database password but login to database fails | Existing PostgreSQL named volumes retain the password initialized on the first run. Restore the original matching `.env` credentials or deliberately change the database user's password; do not delete volumes just to troubleshoot. |
 | Changes to frontend do not appear | Keep Vite running, refresh the browser, and check the frontend terminal for compilation errors. |
