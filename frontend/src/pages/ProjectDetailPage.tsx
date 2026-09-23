@@ -20,6 +20,8 @@ import ProjectCompensation from '../components/compensation/ProjectCompensation'
 import ProjectRR from '../components/rr/ProjectRR'
 import ProjectPossession from '../components/possession/ProjectPossession'
 
+import './ProjectDetailPage.css'
+
 export default function ProjectDetailPage() {
   const { projectId } = useParams()
 
@@ -115,7 +117,47 @@ export default function ProjectDetailPage() {
             </span>
           </div>
 
-          <section className="panel">
+          <nav
+            className="project-jump-nav"
+            aria-label="Project sections"
+          >
+            <span className="project-jump-label">
+              GO TO SECTION
+            </span>
+
+            <a href="#project-details">
+              Project details
+            </a>
+
+            <a href="#project-workflow">
+              Workflow
+            </a>
+
+            <a href="#project-documents">
+              Documents
+            </a>
+
+            <a href="#project-compensation">
+              Compensation
+            </a>
+
+            <a href="#project-rr">
+              R&R
+            </a>
+
+            <a href="#project-possession">
+              Parcel progress
+            </a>
+
+            <Link to={`/projects/${project.id}/gis`}>
+              GIS map
+            </Link>
+          </nav>
+
+          <section
+            id="project-details"
+            className="panel project-section-anchor"
+          >
             <div className="panel-heading">
               <div>
                 <h2>Project details</h2>
@@ -168,28 +210,54 @@ export default function ProjectDetailPage() {
             </dl>
           </section>
 
-          <ProjectWorkflow
-            projectId={project.id}
-            onStatusChange={(status) =>
-              setProject((current) =>
-                current ? { ...current, status } : current
-              )
-            }
-          />
-          <ProjectDocuments projectId={project.id} />
+          <div
+            id="project-workflow"
+            className="project-section-anchor"
+          >
+            <ProjectWorkflow
+              projectId={project.id}
+              onStatusChange={(status) =>
+                setProject((current) =>
+                  current ? { ...current, status } : current
+                )
+              }
+            />
+          </div>
+          <div
+            id="project-documents"
+            className="project-section-anchor"
+          >
+            <ProjectDocuments projectId={project.id} />
+          </div>
 
-          <ProjectCompensation projectId={project.id} />
+          <div
+            id="project-compensation"
+            className="project-section-anchor"
+          >
+            <ProjectCompensation projectId={project.id} />
+          </div>
 
-          <ProjectRR projectId={project.id} />
+          <div
+            id="project-rr"
+            className="project-section-anchor"
+          >
+            <ProjectRR projectId={project.id} />
+          </div>
 
-          <ProjectPossession projectId={project.id} />
+          <div
+            id="project-possession"
+            className="project-section-anchor"
+          >
+            <ProjectPossession projectId={project.id} />
+          </div>
 
           <div className="information-note">
-            Land parcel management is available through
-            the project GIS map. Workflow, documents,
-            compensation, rehabilitation, and possession
-            modules will be added during subsequent
-            development phases.
+            <strong>Demonstration data:</strong> This project
+            uses synthetic records. Compensation and R&amp;R
+            amounts are indicative planning values, not
+            approved awards or payments. Parcel progress
+            records are demonstration milestones, not legal
+            possession certificates.
           </div>
         </>
       )}
